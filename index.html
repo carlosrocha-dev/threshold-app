@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Threshold de Imagem</title>
+</head>
+<body>
+    <h2>Upload da imagem e valor do threshold</h2>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="image" required><br><br>
+        <input type="number" name="threshold" min="0" max="255" value="128" required><br><br>
+        <input type="submit" value="Processar">
+    </form>
+</body>
+</html>
