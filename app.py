@@ -1,32 +1,38 @@
-from flask import Flask, request, render_template, send_file
+import streamlit as st
 import cv2
 import numpy as np
-import os
+from io import BytesIO
+from PIL import Image
 
-app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-RESULT_FOLDER = 'results'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RESULT_FOLDER, exist_ok=True)
+st.set_page_config(page_title="Threshold de Imagem", layout="centered")
+st.title("Aplicação de Threshold em Imagens")
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        file = request.files['image']
-        threshold_value = int(request.form['threshold'])
-        path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(path)
+uploaded_file = st.file_uploader("Escolha uma imagem", type=["png", "jpg", "jpeg"])
+threshold_value = st.slider("Valor do threshold", 0, 255, 128)
 
-        # Processamento com OpenCV
-        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-        _, threshed = cv2.threshold(img, threshold_value, 255, cv2.THRESH_BINARY)
+if uploaded_file is not None:
+    # Mostrar preview
+    image = Image.open(uploaded_file).convert("L")
+    img_array = np.array(image)
 
-        result_path = os.path.join(RESULT_FOLDER, f"thresh_{file.filename}")
-        cv2.imwrite(result_path, threshed)
+    st.subheader("Pré-visualização da Imagem Original")
+    st.image(image, use_column_width=True, caption="Imagem em tons de cinza")
 
-        return send_file(result_path, mimetype='image/png')
+    # Aplicar threshold
+    _, threshed = cv2.threshold(img_array, threshold_value, 255, cv2.THRESH_BINARY)
+    result_image = Image.fromarray(threshed)
 
-    return render_template('index.html')
+    st.subheader("Resultado da Imagem com Threshold")
+    st.image(result_image, use_column_width=True, caption="Imagem binarizada")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    # Gerar imagem para download
+    buf = BytesIO()
+    result_image.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+
+    st.download_button(
+        label="Download da Imagem Processada",
+        data=byte_im,
+        file_name="threshold_result.png",
+        mime="image/png"
+    )
