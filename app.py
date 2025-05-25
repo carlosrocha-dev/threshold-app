@@ -7,8 +7,8 @@ from PIL import Image
 import base64
 
 # Configuração da página
-st.set_page_config(page_title="Comparação Interativa", layout="centered")
-st.title("Comparação Interativa: Antes vs. Processada")
+st.set_page_config(page_title="Helper", layout="centered")
+st.title("Antes vs. Processada")
 
 # Upload na barra lateral
 uploaded_file = st.sidebar.file_uploader("Escolha uma imagem", type=["png", "jpg", "jpeg"])
