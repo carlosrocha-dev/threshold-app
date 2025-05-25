@@ -59,7 +59,7 @@ if uploaded_file:
     <script>
       const slider = document.getElementById('slider');
       const after = document.getElementById('after');
-      slider.oninput = () => { after.style.clipPath = (`inset(0 ${{100-slider.value}}% 0 0)`; };
+      slider.oninput = () => { after.style.clipPath = `inset(0 ${100-slider.value}% 0 0)`; };
     </script>
     """
     components.html(html, height=600)
