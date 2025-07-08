@@ -21,15 +21,16 @@ if uploaded_file:
     img_h, img_w = gray.shape[:2]
 
     # Slider de níveis de posterização
-    levels = st.slider("Níveis de Posterização", 2, 10, 4, step=1)
+    levels = st.slider("Níveis de Posterização", min_value=2, max_value=10, value=4)
 
     # Posterização: dividir em bins e atribuir valor médio de cada intervalo
-    bins = np.linspace(0, 256, levels + 1, endpoint=True)
+    bins = np.linspace(0, 256, levels + 1)
     poster = np.zeros_like(gray)
     for i in range(levels):
         mask = (gray >= bins[i]) & (gray < bins[i+1])
         poster[mask] = int((bins[i] + bins[i+1]) / 2)
-    poster[gray == 255] = int((bins[-2] + bins[-1]) / 2)
+    # Tratar valor máximo
+    poster[gray >= 255] = int((bins[-2] + bins[-1]) / 2)
 
     # Converter para base64
     def to_b64(arr):
@@ -45,7 +46,7 @@ if uploaded_file:
     scale = min(1.0, max_display_w / img_w)
     display_h = int(img_h * scale)
 
-    # HTML e JS do slider interativo
+    # HTML e JS do slider interativo sem backticks
     html = f"""
     <div style="position:relative; width:100%; max-width:{max_display_w}px;">
       <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
@@ -60,7 +61,7 @@ if uploaded_file:
       const after = document.getElementById('after');
       const handle = document.getElementById('handle');
       slider.oninput = function() {
-        const val = slider.value;
+        var val = slider.value;
         after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
         handle.style.left = val + '%';
       };
