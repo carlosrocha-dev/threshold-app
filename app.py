@@ -63,7 +63,7 @@ if uploaded_files:
                 y0, x0 = coords.min(axis=0)
                 y1, x1 = coords.max(axis=0)
                 crop = display[y0:y1+1, x0:x1+1]
-                thumb_img = np.full(crop.shape, 255 if idx>0 else 255, dtype=np.uint8)
+                thumb_img = np.full(crop.shape, 255, dtype=np.uint8)
                 thumb_img[crop] = v
             else:
                 thumb_img = np.full((1,1), v, dtype=np.uint8)
@@ -106,18 +106,16 @@ if uploaded_files:
         components.html(html, height=thumb_h*2 + 50)
 
         # Botões de download simplificados...
-        # (manter lógica de download anterior)
         _, buf_poster = cv2.imencode('.png', poster)
         st.download_button(f'Download Posterizada', buf_poster.tobytes(),
-                           file_name=f'posterizada_{uploaded_file.name}', mime='image/png')
+                           file_name=f'posterizada_{uploaded_file.name}.png', mime='image/png')
 
         # ZIP com camadas
         zip_buf = io.BytesIO()
         with zipfile.ZipFile(zip_buf, 'w') as zf:
-            zf.writestr(f'posterizada_{uploaded_file.name}', buf_poster.tobytes())
+            zf.writestr(f'posterizada_{uploaded_file.name}.png', buf_poster.tobytes())
             for b64, cap in zip(thumbs_b64, captions):
                 thumb_data = base64.b64decode(b64)
-                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
+                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace(".",",")}.png', thumb_data)
         st.download_button(f'Download Conjunto ZIP', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
-        """
