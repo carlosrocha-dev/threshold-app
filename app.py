@@ -67,3 +67,4 @@ if uploaded_file:
     </script>
     """
     components.html(html, height=display_h)
+
