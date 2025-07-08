@@ -32,42 +32,49 @@ if uploaded_files:
         # Posterização: dividir em bins e atribuir valor médio de cada intervalo
         bins = np.linspace(0, 256, levels + 1)
         poster = np.zeros_like(gray)
+        masks = []
         for i in range(levels):
             mask = (gray >= bins[i]) & (gray < bins[i+1])
+            masks.append(mask)
             poster[mask] = int((bins[i] + bins[i+1]) / 2)
         poster[gray >= bins[-2]] = int((bins[-2] + bins[-1]) / 2)
 
-        # Preparar miniaturas das áreas correspondentes a cada tom
+        # Preparar miniaturas cumulativas das áreas correspondentes a cada tom
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
         thumbs = []
         captions = []
         # tamanho da thumb como metade da imagem original
         thumb_w, thumb_h = img_w // 2, img_h // 2
+
+        cumulative_mask = np.zeros_like(gray, dtype=bool)
         for idx, v in enumerate(mid_values):
-            # máscara de pixels do tom atual
-            mask_v = (poster == v)
-            # inverter máscaras de todos os tons exceto o primeiro
+            # acumula máscaras até o índice atual
+            cumulative_mask = cumulative_mask | masks[idx]
+
+            display_mask = cumulative_mask.copy()
+            # inverter todos exceto o primeiro
             if idx > 0:
-                mask_v = ~mask_v
-            coords = np.column_stack(np.where(mask_v))
+                display_mask = ~display_mask
+
+            # recortar à region ativa
+            coords = np.column_stack(np.where(display_mask))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
                 y1, x1 = coords.max(axis=0)
-                crop_mask = mask_v[y0:y1+1, x0:x1+1]
-                # criar imagem onde só o tom aparece (ou invertido), fundo branco
+                crop_mask = display_mask[y0:y1+1, x0:x1+1]
                 thumb_img = np.full(crop_mask.shape, 255, dtype=np.uint8)
                 thumb_img[crop_mask] = v
             else:
-                # se não encontrou pixels, criar bloco do tom
                 thumb_img = np.full((1,1), v, dtype=np.uint8)
+
             # redimensiona para metade da imagem original
             thumb = cv2.resize(thumb_img, (thumb_w, thumb_h), interpolation=cv2.INTER_NEAREST)
             thumbs.append(thumb)
-            # legenda em porcentagem do tom
+
             pct = v / 255 * 100
             captions.append(f"{pct:.1f}%")
 
-        st.subheader("Tons gerados na posterização")
+        st.subheader("Tons gerados na posterização (cumulativos)")
         st.image(
             thumbs,
             width=None,
