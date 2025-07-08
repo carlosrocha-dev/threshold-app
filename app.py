@@ -46,8 +46,8 @@ if uploaded_files:
         for idx, v in enumerate(mid_values):
             # máscara de pixels do tom atual
             mask_v = (poster == v)
-            # inverter máscara para altas luzes (último tom)
-            if idx == len(mid_values) - 1:
+            # inverter máscaras de todos os tons exceto o primeiro
+            if idx > 0:
                 mask_v = ~mask_v
             coords = np.column_stack(np.where(mask_v))
             if coords.size:
