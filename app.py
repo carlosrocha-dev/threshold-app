@@ -37,6 +37,26 @@ if uploaded_file:
     orig_b64 = to_b64(gray)
     poster_b64 = to_b64(poster)
 
+    # Botão de download da imagem posterizada
+    _, poster_buffer = cv2.imencode('.png', poster)
+    st.download_button(
+        label='Download da imagem posterizada',
+        data=poster_buffer.tobytes(),
+        file_name='posterizada.png',
+        mime='image/png'
+    )
+
+    # Exibir thumbnails de cada tom gerado (amostras em blocos de 50x50)
+    mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
+    patches = [np.full((50, 50), v, dtype=np.uint8) for v in mid_values]
+    st.subheader("Tons gerados na posterização")
+    st.image(
+        patches,
+        width=50,
+        clamp=True,
+        caption=[str(v) for v in mid_values]
+    )
+
     # Dimensionar display
     max_display_w = 800
     scale = min(1.0, max_display_w / img_w)
@@ -64,4 +84,3 @@ if uploaded_file:
     </script>
     """
     components.html(html, height=display_h)
-
