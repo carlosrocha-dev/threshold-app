@@ -47,16 +47,17 @@ if uploaded_files:
         thumb_w, thumb_h = img_w // 2, img_h // 2
 
         cumulative_mask = np.zeros_like(gray, dtype=bool)
+        last_idx = levels - 1
         for idx, v in enumerate(mid_values):
             # acumula máscaras até o índice atual
             cumulative_mask = cumulative_mask | masks[idx]
 
             display_mask = cumulative_mask.copy()
-            # inverter todos exceto o primeiro
-            if idx > 0:
+            # inverter todos exceto a primeira e a última
+            if idx > 0 and idx < last_idx:
                 display_mask = ~display_mask
 
-            # recortar à region ativa
+            # recortar à região ativa
             coords = np.column_stack(np.where(display_mask))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
