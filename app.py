@@ -8,7 +8,7 @@ import zipfile
 
 # Configuração da página
 st.set_page_config(page_title="Gerador de Referencia de Sombra Interativa", layout="centered")
-st.title("Comparação Interativa: Antes vs. Posterizado")
+st.title("Comparação Interativa")
 
 # Upload na barra lateral para múltiplas imagens
 uploaded_files = st.sidebar.file_uploader(
