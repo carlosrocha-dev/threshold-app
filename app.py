@@ -29,10 +29,9 @@ if uploaded_file:
     for i in range(levels):
         mask = (gray >= bins[i]) & (gray < bins[i+1])
         poster[mask] = int((bins[i] + bins[i+1]) / 2)
-    # lidar com valor máximo
     poster[gray == 255] = int((bins[-2] + bins[-1]) / 2)
 
-    # Função para converter para base64
+    # Converter para base64
     def to_b64(arr):
         buf = BytesIO()
         Image.fromarray(arr).save(buf, format="PNG")
@@ -41,12 +40,12 @@ if uploaded_file:
     orig_b64 = to_b64(gray)
     poster_b64 = to_b64(poster)
 
-    # Dimensionar altura do componente conforme largura máxima
+    # Dimensionar display
     max_display_w = 800
     scale = min(1.0, max_display_w / img_w)
     display_h = int(img_h * scale)
 
-    # HTML com controle deslizante embutido e handle visível
+    # HTML e JS do slider interativo
     html = f"""
     <div style="position:relative; width:100%; max-width:{max_display_w}px;">
       <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
@@ -60,11 +59,11 @@ if uploaded_file:
       const slider = document.getElementById('slider');
       const after = document.getElementById('after');
       const handle = document.getElementById('handle');
-      slider.oninput = () => {{
+      slider.oninput = function() {
         const val = slider.value;
-        after.style.clipPath = `inset(0 ${100-val}% 0 0)`;
-        handle.style.left = `${val}%`;
-      }};
+        after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
+        handle.style.left = val + '%';
+      };
     </script>
     """
     components.html(html, height=display_h)
