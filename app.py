@@ -29,7 +29,6 @@ if uploaded_file:
     for i in range(levels):
         mask = (gray >= bins[i]) & (gray < bins[i+1])
         poster[mask] = int((bins[i] + bins[i+1]) / 2)
-    # Tratar valor máximo
     poster[gray >= 255] = int((bins[-2] + bins[-1]) / 2)
 
     # Converter para base64
@@ -46,7 +45,7 @@ if uploaded_file:
     scale = min(1.0, max_display_w / img_w)
     display_h = int(img_h * scale)
 
-    # HTML e JS do slider interativo sem backticks
+    # HTML e JS do slider interativo com chaves escapadas
     html = f"""
     <div style="position:relative; width:100%; max-width:{max_display_w}px;">
       <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
@@ -60,11 +59,11 @@ if uploaded_file:
       const slider = document.getElementById('slider');
       const after = document.getElementById('after');
       const handle = document.getElementById('handle');
-      slider.oninput = function() {
+      slider.oninput = function() {{
         var val = slider.value;
         after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
         handle.style.left = val + '%';
-      };
+      }};
     </script>
     """
     components.html(html, height=display_h)
