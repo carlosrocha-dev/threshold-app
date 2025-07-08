@@ -47,21 +47,27 @@ if uploaded_files:
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
         thumbs = []
         captions = []
-        # definir tamanho da thumb como metade da imagem original
+        # tamanho da thumb como metade da imagem original
         thumb_w, thumb_h = img_w // 2, img_h // 2
         for v in mid_values:
-            mask = poster == v
-            coords = np.column_stack(np.where(mask))
+            mask_v = (poster == v)
+            coords = np.column_stack(np.where(mask_v))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
                 y1, x1 = coords.max(axis=0)
-                crop = poster[y0:y1+1, x0:x1+1]
-                # redimensiona para metade da imagem original
-                thumb = cv2.resize(crop, (thumb_w, thumb_h), interpolation=cv2.INTER_NEAREST)
+                crop_mask = mask_v[y0:y1+1, x0:x1+1]
+                # criar imagem onde só o tom aparece, fundo branco
+                thumb_img = np.full(crop_mask.shape, 255, dtype=np.uint8)
+                thumb_img[crop_mask] = v
             else:
-                thumb = np.full((thumb_h, thumb_w), v, dtype=np.uint8)
+                # se não encontrou pixels, criar bloco do tom
+                thumb_img = np.full((1,1), v, dtype=np.uint8)
+            # redimensiona para metade da imagem original
+            thumb = cv2.resize(thumb_img, (thumb_w, thumb_h), interpolation=cv2.INTER_NEAREST)
             thumbs.append(thumb)
-            captions.append(str(v))
+            # legenda em porcentagem do tom
+            pct = v / 255 * 100
+            captions.append(f"{pct:.1f}%")
 
         st.subheader("Tons gerados na posterização")
         st.image(
@@ -105,4 +111,5 @@ if uploaded_files:
           }};
         </script>
         """
+        
         components.html(html, height=display_h)
