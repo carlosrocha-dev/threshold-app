@@ -16,6 +16,7 @@ uploaded_files = st.sidebar.file_uploader(
 )
 
 # Função para converter array em base64
+
 def to_b64(arr):
     _, buffer = cv2.imencode('.png', arr)
     return base64.b64encode(buffer).decode()
@@ -76,9 +77,10 @@ if uploaded_files:
         """
         components.html(slider_html, height=display_h)
 
-        # Preparar miniaturas (25% do tamanho original)
+        # Preparar miniaturas (25% do tamanho original) e full-size para lightbox
         thumb_w, thumb_h = img_w // 4, img_h // 4
         thumbs_b64 = []
+        full_b64 = []
         captions = []
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
 
@@ -86,6 +88,11 @@ if uploaded_files:
             mask = masks[idx]
             # primeira normal, demais invertidas
             display = mask if idx == 0 else ~mask
+            # gerar imagem full-size desta camada
+            full_img = np.full(gray.shape, 255, dtype=np.uint8)
+            full_img[display] = v
+            full_b64.append(to_b64(full_img))
+            # gerar thumbnail
             coords = np.column_stack(np.where(display))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
@@ -100,21 +107,21 @@ if uploaded_files:
             pct = v / 255 * 100
             captions.append(f"{pct:.1f}%")
 
-        # Grid interativo com lightbox
+        # Grid interativo com lightbox exibindo full-size
         html = f"""
         <style>
         .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax({thumb_w}px, 1fr)); gap: 10px; }}
         .grid img {{ width: 100%; cursor: pointer; }}
         #lightbox {{ position: fixed; display: none; top: 0; left: 0; width: 100%; height: 100%;
-                     background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }}
+                     background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index:999; }}
         #lightbox img {{ max-width: 90%; max-height: 90%; }}
         #close {{ position: absolute; top: 20px; right: 30px; color: white; font-size: 2rem; cursor: pointer; }}
         </style>
         <div class="grid">
         """
-        for b64, cap in zip(thumbs_b64, captions):
-            html += f'<img src="data:image/png;base64,{b64}" alt="{cap}" />'
-        html += f"""
+        for thumb_src, full_src, cap in zip(thumbs_b64, full_b64, captions):
+            html += f'<img src="data:image/png;base64,{thumb_src}" data-full="data:image/png;base64,{full_src}" alt="{cap}" />'
+        html += """
         </div>
         <div id="lightbox" onclick="if(event.target.id=='lightbox')this.style.display='none';">
             <span id="close" onclick="document.getElementById('lightbox').style.display='none'">&times;</span>
@@ -124,7 +131,7 @@ if uploaded_files:
         document.querySelectorAll('.grid img').forEach(img => {{
             img.onclick = () => {{
                 let lb = document.getElementById('lightbox');
-                lb.querySelector('img').src = img.src;
+                lb.querySelector('img').src = img.dataset.full;
                 lb.style.display = 'flex';
             }}
         }});
@@ -141,9 +148,8 @@ if uploaded_files:
         zip_buf = io.BytesIO()
         with zipfile.ZipFile(zip_buf, 'w') as zf:
             zf.writestr(f'posterizada_{uploaded_file.name}.png', buf_poster.tobytes())
-            for b64, cap in zip(thumbs_b64, captions):
-                thumb_data = base64.b64decode(b64)
+            for i, cap in enumerate(captions):
+                thumb_data = base64.b64decode(full_b64[i])
                 zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
         st.download_button('Download das camadas e referência (.ZIP)', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
-
