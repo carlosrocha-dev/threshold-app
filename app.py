@@ -8,7 +8,7 @@ import zipfile
 
 # Configuração da página
 st.set_page_config(page_title="Gerador de Referencia de Sombra Interativa", layout="centered")
-st.title("Comparação Interativa")
+st.title("Comparação Interativa: Antes vs. Posterizado")
 
 # Upload na barra lateral para múltiplas imagens
 uploaded_files = st.sidebar.file_uploader(
@@ -108,7 +108,11 @@ if uploaded_files:
         # Grid interativo com lightbox exibindo full-size
         html = f"""
         <style>
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax({thumb_w}px, 1fr)); gap: 10px; }}
+        .grid {{ display: grid;
+                 grid-template-columns: repeat(auto-fit, minmax({thumb_w}px, 1fr));
+                 gap: 10px;
+                 width: 100%;
+        }}
         .grid img {{ width: 100%; cursor: pointer; }}
         #lightbox {{ position: fixed; display: none; top: 0; left: 0; width: 100vw; height: 100vh;
                      background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index:999; }}
@@ -117,6 +121,7 @@ if uploaded_files:
         </style>
         <div class="grid">
         """
+        
         for thumb_src, full_src, cap in zip(thumbs_b64, full_b64, captions):
             html += f'<img src="data:image/png;base64,{thumb_src}" data-full="data:image/png;base64,{full_src}" alt="{cap}" />'
         html += """
