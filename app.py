@@ -67,11 +67,11 @@ if uploaded_files:
           const slider = document.getElementById('slider');
           const after = document.getElementById('after');
           const handle = document.getElementById('handle');
-          slider.oninput = function() {{
+          slider.oninput = function() {
             const val = slider.value;
             after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
             handle.style.left = val + '%';
-          }};
+          };
         </script>
         """
         components.html(slider_html, height=display_h)
@@ -105,15 +105,16 @@ if uploaded_files:
             pct = v / 255 * 100
             captions.append(f"{pct:.1f}%")
 
-        # Grid interativo com lightbox exibindo full-size
+        # Grid interativo com flex horizontal
         html = f"""
         <style>
-        .grid {{ display: grid;
-                 grid-template-columns: repeat(auto-fit, minmax({thumb_w}px, 1fr));
+        .grid {{ display: flex;
+                 flex-wrap: wrap;
+                 justify-content: flex-start;
                  gap: 10px;
                  width: 100%;
         }}
-        .grid img {{ width: 100%; cursor: pointer; }}
+        .grid img {{ flex: 0 0 auto; width: {thumb_w}px; height: {thumb_h}px; cursor: pointer; }}
         #lightbox {{ position: fixed; display: none; top: 0; left: 0; width: 100vw; height: 100vh;
                      background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index:999; }}
         #lightbox img {{ max-width: 90%; max-height: 90%; }}
@@ -121,7 +122,6 @@ if uploaded_files:
         </style>
         <div class="grid">
         """
-        
         for thumb_src, full_src, cap in zip(thumbs_b64, full_b64, captions):
             html += f'<img src="data:image/png;base64,{thumb_src}" data-full="data:image/png;base64,{full_src}" alt="{cap}" />'
         html += """
@@ -131,16 +131,16 @@ if uploaded_files:
             <img src="" alt="">
         </div>
         <script>
-        document.querySelectorAll('.grid img').forEach(img => {{
-            img.onclick = () => {{
+        document.querySelectorAll('.grid img').forEach(img => {
+            img.onclick = () => {
                 let lb = document.getElementById('lightbox');
                 lb.querySelector('img').src = img.dataset.full;
                 lb.style.display = 'flex';
-            }}
-        }});
+            }
+        });
         </script>
         """
-        components.html(html, height=thumb_h*2 + 50)
+        components.html(html, height=display_h + thumb_h*2 + 100, scrolling=True)
 
         # Botões de download
         _, buf_poster = cv2.imencode('.png', poster)
