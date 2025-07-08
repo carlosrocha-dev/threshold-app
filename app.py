@@ -26,12 +26,12 @@ if uploaded_file:
 
     # Aplicar threshold
     _, mask = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
-    # Suavizar bordas do mask (Gaussian Blur)
+    # Suavizar mask com Gaussian Blur (bordas suaves)
     mask_norm = mask.astype(np.float32) / 255.0
-    mask_blur = cv2.GaussianBlur(mask_norm, ksize=(0,0), sigmaX=2)
+    mask_blur = cv2.GaussianBlur(mask_norm, ksize=(0, 0), sigmaX=2)
     final_gray = np.clip(mask_blur * 255, 0, 255).astype(np.uint8)
 
-    # Converter imagens para base64
+    # Função para converter para base64
     def to_b64(arr):
         buf = BytesIO()
         Image.fromarray(arr).save(buf, format="PNG")
@@ -40,24 +40,33 @@ if uploaded_file:
     orig_b64 = to_b64(gray)
     final_b64 = to_b64(final_gray)
 
-    # Ajustar altura do componente baseado no tamanho da imagem
+    # Ajuste de display
     max_display_w = 800
     scale = min(1.0, max_display_w / img_w)
     display_h = int(img_h * scale)
 
-    # HTML do controle deslizante na imagem (grayscale)
+    # HTML com handle visível no controle deslizante
     html = f"""
     <div style="position:relative; width:100%; max-width:{max_display_w}px;">
-      <img src="data:image/png;base64,{orig_b64}" style="width:100%;">  
-      <img src="data:image/png;base64,{final_b64}" id="after"  
-           style="position:absolute; top:0; left:0; width:100%; clip-path: inset(0 50% 0 0);">  
-      <input type="range" min="0" max="100" value="50" id="slider"  
-             style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:ew-resize;">  
+      <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
+      <img src="data:image/png;base64,{final_b64}" id="after" 
+           style="position:absolute; top:0; left:0; width:100%; clip-path: inset(0 50% 0 0);">
+      <!-- handle visível -->
+      <div id="handle" style="position:absolute; top:0; left:50%; width:4px; height:100%; 
+           background:rgba(255,255,255,0.8); pointer-events:none;"></div>
+      <!-- input invisível para captura -->
+      <input type="range" min="0" max="100" value="50" id="slider"
+             style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:ew-resize;">
     </div>
     <script>
       const slider = document.getElementById('slider');
       const after = document.getElementById('after');
-      slider.oninput = () => {{ after.style.clipPath = `inset(0 ${{100-slider.value}}% 0 0)`; }};
+      const handle = document.getElementById('handle');
+      slider.oninput = () => {{
+        const val = slider.value;
+        after.style.clipPath = `inset(0 ${100 - val}% 0 0)`;
+        handle.style.left = `${val}%`;
+      }};
     </script>
     """
     components.html(html, height=display_h)
