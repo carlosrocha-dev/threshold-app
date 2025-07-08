@@ -67,11 +67,11 @@ if uploaded_files:
           const slider = document.getElementById('slider');
           const after = document.getElementById('after');
           const handle = document.getElementById('handle');
-          slider.oninput = function() {
+          slider.oninput = function() {{
             const val = slider.value;
             after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
             handle.style.left = val + '%';
-          };
+          }};
         </script>
         """
         components.html(slider_html, height=display_h)
@@ -114,20 +114,20 @@ if uploaded_files:
         """
         for b64, cap in zip(thumbs_b64, captions):
             html += f'<img src="data:image/png;base64,{b64}" alt="{cap}" />'
-        html += """
+        html += f"""
         </div>
         <div id="lightbox" onclick="if(event.target.id=='lightbox')this.style.display='none';">
             <span id="close" onclick="document.getElementById('lightbox').style.display='none'">&times;</span>
             <img src="" alt="">
         </div>
         <script>
-        document.querySelectorAll('.grid img').forEach(img => {
-            img.onclick = () => {
+        document.querySelectorAll('.grid img').forEach(img => {{
+            img.onclick = () => {{
                 let lb = document.getElementById('lightbox');
                 lb.querySelector('img').src = img.src;
                 lb.style.display = 'flex';
-            }
-        });
+            }}
+        }});
         </script>
         """
         components.html(html, height=thumb_h*2 + 50)
