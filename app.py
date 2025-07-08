@@ -3,13 +3,14 @@ import streamlit.components.v1 as components
 import cv2
 import numpy as np
 import base64
+import io
+import zipfile
 
 # Configuração da página
 st.set_page_config(page_title="Posterização Interativa", layout="centered")
 st.title("Comparação Interativa: Antes vs. Posterizado")
 
 # Upload na barra lateral para múltiplas imagens
-downloads = []
 uploaded_files = st.sidebar.file_uploader(
     "Escolha imagens (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True
 )
@@ -24,7 +25,9 @@ if uploaded_files:
         img_h, img_w = gray.shape[:2]
 
         # Slider de níveis de posterização
-        levels = st.slider(f"Níveis de Posterização ({uploaded_file.name})", min_value=2, max_value=10, value=4)
+        levels = st.slider(
+            f"Níveis de Posterização ({uploaded_file.name})", min_value=2, max_value=10, value=4
+        )
 
         # Posterização: dividir em bins e atribuir valor médio de cada intervalo
         bins = np.linspace(0, 256, levels + 1)
@@ -33,15 +36,6 @@ if uploaded_files:
             mask = (gray >= bins[i]) & (gray < bins[i+1])
             poster[mask] = int((bins[i] + bins[i+1]) / 2)
         poster[gray >= 255] = int((bins[-2] + bins[-1]) / 2)
-
-        # Botão de download da imagem posterizada
-        _, poster_buffer = cv2.imencode('.png', poster)
-        st.download_button(
-            label=f'Download da posterizada ({uploaded_file.name})',
-            data=poster_buffer.tobytes(),
-            file_name=f'posterizada_{uploaded_file.name}',
-            mime='image/png'
-        )
 
         # Preparar miniaturas das áreas correspondentes a cada tom
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
@@ -75,6 +69,32 @@ if uploaded_files:
             width=None,
             caption=captions,
             clamp=True
+        )
+
+        # Botão de download individual para posterizada
+        _, poster_buffer = cv2.imencode('.png', poster)
+        st.download_button(
+            label=f'Download da posterizada ({uploaded_file.name})',
+            data=poster_buffer.tobytes(),
+            file_name=f'posterizada_{uploaded_file.name}',
+            mime='image/png'
+        )
+
+        # Botão de download em lote (ZIP) com poster e camadas
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zf:
+            # adicionar posterizada
+            zf.writestr(f'posterizada_{uploaded_file.name}', poster_buffer.tobytes())
+            # adicionar thumbs
+            for thumb, cap in zip(thumbs, captions):
+                _, buf = cv2.imencode('.png', thumb)
+                fname = f"{uploaded_file.name}_tom_{cap.replace('%','p')}.png"
+                zf.writestr(fname, buf.tobytes())
+        st.download_button(
+            label=f'Download conjunto ZIP ({uploaded_file.name})',
+            data=zip_buffer.getvalue(),
+            file_name=f'conjunto_{uploaded_file.name}.zip',
+            mime='application/zip'
         )
 
         # Converter array para base64 para o slider interativo
@@ -111,5 +131,4 @@ if uploaded_files:
           }};
         </script>
         """
-        
         components.html(html, height=display_h)
