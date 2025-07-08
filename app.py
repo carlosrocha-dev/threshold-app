@@ -46,15 +46,30 @@ if uploaded_file:
         mime='image/png'
     )
 
-    # Exibir thumbnails de cada tom gerado (amostras em blocos de 50x50)
+    # Preparar miniaturas das áreas correspondentes a cada tom
     mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
-    patches = [np.full((50, 50), v, dtype=np.uint8) for v in mid_values]
+    thumbs = []
+    captions = []
+    for v in mid_values:
+        mask = poster == v
+        coords = np.column_stack(np.where(mask))
+        if coords.size:
+            y0, x0 = coords.min(axis=0)
+            y1, x1 = coords.max(axis=0)
+            crop = poster[y0:y1+1, x0:x1+1]
+            # Redimensiona para 50x50 mantendo blocos
+            thumb = cv2.resize(crop, (50, 50), interpolation=cv2.INTER_NEAREST)
+        else:
+            thumb = np.full((50, 50), v, dtype=np.uint8)
+        thumbs.append(thumb)
+        captions.append(str(v))
+
     st.subheader("Tons gerados na posterização")
     st.image(
-        patches,
+        thumbs,
         width=50,
         clamp=True,
-        caption=[str(v) for v in mid_values]
+        caption=captions
     )
 
     # Dimensionar display
@@ -84,3 +99,4 @@ if uploaded_file:
     </script>
     """
     components.html(html, height=display_h)
+
