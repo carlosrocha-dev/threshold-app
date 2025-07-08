@@ -39,7 +39,7 @@ if uploaded_files:
             poster[mask] = int((bins[i] + bins[i+1]) / 2)
         poster[gray >= bins[-2]] = int((bins[-2] + bins[-1]) / 2)
 
-        # Preparar miniaturas cumulativas das áreas correspondentes a cada tom
+        # Preparar miniaturas das áreas correspondentes a cada tom
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
         thumbs = []
         captions = []
@@ -49,14 +49,14 @@ if uploaded_files:
         cumulative_mask = np.zeros_like(gray, dtype=bool)
         last_idx = levels - 1
         for idx, v in enumerate(mid_values):
-            # acumula todas as máscaras para referência, mas não acumula no display de first/last
-            cumulative_mask = cumulative_mask | masks[idx]
-            # definir display_mask: primeira e última apenas ela, intermediárias acumulam e são invertidas
-            if idx == 0 or idx == last_idx:
+            # acumula para referência
+            cumulative_mask |= masks[idx]
+            # definir display_mask: primeira mantém normal, demais invertidas
+            if idx == 0:
                 display_mask = masks[idx]
             else:
-                # acumulativo invertido para camadas intermediárias
-                display_mask = ~cumulative_mask.copy()
+                # inverte apenas a máscara atual
+                display_mask = ~masks[idx]
 
             # recortar à região ativa
             coords = np.column_stack(np.where(display_mask))
@@ -76,7 +76,7 @@ if uploaded_files:
             pct = v / 255 * 100
             captions.append(f"{pct:.1f}%")
 
-        st.subheader("Tons gerados na posterização (cumulativos)")
+        st.subheader("Tons gerados na posterização")
         st.image(
             thumbs,
             width=None,
