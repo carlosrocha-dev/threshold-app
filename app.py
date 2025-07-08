@@ -1,4 +1,4 @@
- de referencia import streamlit as st
+import streamlit as st
 import streamlit.components.v1 as components
 import cv2
 import numpy as np
@@ -8,7 +8,7 @@ import zipfile
 
 # Configuração da página
 st.set_page_config(page_title="Gerador de Referencia de Sombra Interativa", layout="centered")
-st.title("Comparação Interativa")
+st.title("Comparação Interativa: Antes vs. Posterizado")
 
 # Upload na barra lateral para múltiplas imagens
 uploaded_files = st.sidebar.file_uploader(
@@ -67,11 +67,11 @@ if uploaded_files:
           const slider = document.getElementById('slider');
           const after = document.getElementById('after');
           const handle = document.getElementById('handle');
-          slider.oninput = function() {{
+          slider.oninput = function() {
             const val = slider.value;
             after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
             handle.style.left = val + '%';
-          }};
+          };
         </script>
         """
         components.html(slider_html, height=display_h)
@@ -134,7 +134,7 @@ if uploaded_files:
 
         # Botões de download
         _, buf_poster = cv2.imencode('.png', poster)
-        st.download_button(f'Download da referência', buf_poster.tobytes(),
+        st.download_button(f'Download Posterizada', buf_poster.tobytes(),
                            file_name=f'posterizada_{uploaded_file.name}.png', mime='image/png')
 
         # ZIP com camadas
@@ -144,5 +144,5 @@ if uploaded_files:
             for b64, cap in zip(thumbs_b64, captions):
                 thumb_data = base64.b64decode(b64)
                 zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
-        st.download_button(f'Download das camadas e referencia (.ZIP)', zip_buf.getvalue(),
+        st.download_button(f'Download Conjunto ZIP', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
