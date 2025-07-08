@@ -134,7 +134,7 @@ if uploaded_files:
 
         # Botões de download
         _, buf_poster = cv2.imencode('.png', poster)
-        st.download_button(f'Download Posterizada', buf_poster.tobytes(),
+        st.download_button('Download da referência', buf_poster.tobytes(),
                            file_name=f'posterizada_{uploaded_file.name}.png', mime='image/png')
 
         # ZIP com camadas
@@ -144,5 +144,6 @@ if uploaded_files:
             for b64, cap in zip(thumbs_b64, captions):
                 thumb_data = base64.b64decode(b64)
                 zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
-        st.download_button(f'Download Conjunto ZIP', zip_buf.getvalue(),
+        st.download_button('Download das camadas e referência (.ZIP)', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
+
