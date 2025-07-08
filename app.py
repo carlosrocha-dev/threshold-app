@@ -35,7 +35,7 @@ if uploaded_files:
         for i in range(levels):
             mask = (gray >= bins[i]) & (gray < bins[i+1])
             poster[mask] = int((bins[i] + bins[i+1]) / 2)
-        poster[gray >= 255] = int((bins[-2] + bins[-1]) / 2)
+        poster[gray >= bins[-2]] = int((bins[-2] + bins[-1]) / 2)
 
         # Preparar miniaturas das áreas correspondentes a cada tom
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
@@ -43,14 +43,18 @@ if uploaded_files:
         captions = []
         # tamanho da thumb como metade da imagem original
         thumb_w, thumb_h = img_w // 2, img_h // 2
-        for v in mid_values:
+        for idx, v in enumerate(mid_values):
+            # máscara de pixels do tom atual
             mask_v = (poster == v)
+            # inverter máscara para altas luzes (último tom)
+            if idx == len(mid_values) - 1:
+                mask_v = ~mask_v
             coords = np.column_stack(np.where(mask_v))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
                 y1, x1 = coords.max(axis=0)
                 crop_mask = mask_v[y0:y1+1, x0:x1+1]
-                # criar imagem onde só o tom aparece, fundo branco
+                # criar imagem onde só o tom aparece (ou invertido), fundo branco
                 thumb_img = np.full(crop_mask.shape, 255, dtype=np.uint8)
                 thumb_img[crop_mask] = v
             else:
