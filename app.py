@@ -49,13 +49,14 @@ if uploaded_files:
         cumulative_mask = np.zeros_like(gray, dtype=bool)
         last_idx = levels - 1
         for idx, v in enumerate(mid_values):
-            # acumula máscaras até o índice atual
+            # acumula todas as máscaras para referência, mas não acumula no display de first/last
             cumulative_mask = cumulative_mask | masks[idx]
-
-            display_mask = cumulative_mask.copy()
-            # inverter todos exceto a primeira e a última
-            if idx > 0 and idx < last_idx:
-                display_mask = ~display_mask
+            # definir display_mask: primeira e última apenas ela, intermediárias acumulam e são invertidas
+            if idx == 0 or idx == last_idx:
+                display_mask = masks[idx]
+            else:
+                # acumulativo invertido para camadas intermediárias
+                display_mask = ~cumulative_mask.copy()
 
             # recortar à região ativa
             coords = np.column_stack(np.where(display_mask))
