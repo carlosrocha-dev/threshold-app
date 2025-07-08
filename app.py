@@ -44,6 +44,38 @@ if uploaded_files:
             poster[mask] = int((bins[i] + bins[i+1]) / 2)
         poster[gray >= bins[-2]] = int((bins[-2] + bins[-1]) / 2)
 
+        # Converter para base64 para o slider comparativo
+        orig_b64 = to_b64(gray)
+        poster_b64 = to_b64(poster)
+
+        # Dimensionar display do slider
+        max_display_w = 800
+        scale = min(1.0, max_display_w / img_w)
+        display_h = int(img_h * scale)
+
+        # HTML e JS do slider interativo com handle
+        slider_html = f"""
+        <div style="position:relative; width:100%; max-width:{max_display_w}px;">
+          <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
+          <img src="data:image/png;base64,{poster_b64}" id="after"
+               style="position:absolute; top:0; left:0; width:100%; clip-path: inset(0 50% 0 0);">
+          <div id="handle" style="position:absolute; top:0; left:50%; width:4px; height:100%; background:rgba(255,255,255,0.8); pointer-events:none;"></div>
+          <input type="range" min="0" max="100" value="50" id="slider"
+                 style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:ew-resize;">
+        </div>
+        <script>
+          const slider = document.getElementById('slider');
+          const after = document.getElementById('after');
+          const handle = document.getElementById('handle');
+          slider.oninput = function() {{
+            const val = slider.value;
+            after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
+            handle.style.left = val + '%';
+          }};
+        </script>
+        """
+        components.html(slider_html, height=display_h)
+
         # Preparar miniaturas (25% do tamanho original)
         thumb_w, thumb_h = img_w // 4, img_h // 4
         thumbs_b64 = []
@@ -53,11 +85,7 @@ if uploaded_files:
         for idx, v in enumerate(mid_values):
             mask = masks[idx]
             # primeira normal, demais invertidas
-            if idx == 0:
-                display = mask
-            else:
-                display = ~mask
-            # recortar área ativa
+            display = mask if idx == 0 else ~mask
             coords = np.column_stack(np.where(display))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
@@ -67,7 +95,6 @@ if uploaded_files:
                 thumb_img[crop] = v
             else:
                 thumb_img = np.full((1,1), v, dtype=np.uint8)
-            # redimensiona
             thumb = cv2.resize(thumb_img, (thumb_w, thumb_h), interpolation=cv2.INTER_NEAREST)
             thumbs_b64.append(to_b64(thumb))
             pct = v / 255 * 100
@@ -105,7 +132,7 @@ if uploaded_files:
         """
         components.html(html, height=thumb_h*2 + 50)
 
-        # Botões de download simplificados...
+        # Botões de download
         _, buf_poster = cv2.imencode('.png', poster)
         st.download_button(f'Download Posterizada', buf_poster.tobytes(),
                            file_name=f'posterizada_{uploaded_file.name}.png', mime='image/png')
@@ -116,6 +143,6 @@ if uploaded_files:
             zf.writestr(f'posterizada_{uploaded_file.name}.png', buf_poster.tobytes())
             for b64, cap in zip(thumbs_b64, captions):
                 thumb_data = base64.b64decode(b64)
-                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace(".",",")}.png', thumb_data)
+                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
         st.download_button(f'Download Conjunto ZIP', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
