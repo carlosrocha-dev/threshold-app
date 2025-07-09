@@ -53,8 +53,8 @@ if uploaded_files:
         scale = min(1.0, max_display_w / img_w)
         display_h = int(img_h * scale)
 
-        # HTML e JS do slider interativo com handle
-        slider_html = f"""
+        # HTML e JS do slider interativo com handle (braces escaped)
+        slider_html = f'''
         <div style="position:relative; width:100%; max-width:{max_display_w}px;">
           <img src="data:image/png;base64,{orig_b64}" style="width:100%;">
           <img src="data:image/png;base64,{poster_b64}" id="after"
@@ -67,30 +67,25 @@ if uploaded_files:
           const slider = document.getElementById('slider');
           const after = document.getElementById('after');
           const handle = document.getElementById('handle');
-          slider.oninput = function() {
+          slider.oninput = function() {{{{
             const val = slider.value;
             after.style.clipPath = 'inset(0 ' + (100 - val) + '% 0 0)';
             handle.style.left = val + '%';
-          };
+          }}}};
         </script>
-        """
+        '''
         components.html(slider_html, height=display_h)
 
-        # Preparar miniaturas (25% do tamanho original) e full-size para lightbox
+        # Preparar miniaturas e full-size
         thumb_w, thumb_h = img_w // 4, img_h // 4
-        thumbs_b64 = []
-        full_b64 = []
-        captions = []
+        thumbs_b64, full_b64, captions = [], [], []
         mid_values = [int((bins[i] + bins[i+1]) / 2) for i in range(levels)]
-
         for idx, v in enumerate(mid_values):
             mask = masks[idx]
             display = mask if idx == 0 else ~mask
-            # full-size desta camada
             full_img = np.full(gray.shape, 255, dtype=np.uint8)
             full_img[display] = v
             full_b64.append(to_b64(full_img))
-            # thumbnail
             coords = np.column_stack(np.where(display))
             if coords.size:
                 y0, x0 = coords.min(axis=0)
@@ -102,57 +97,44 @@ if uploaded_files:
                 thumb_img = np.full((1,1), v, dtype=np.uint8)
             thumb = cv2.resize(thumb_img, (thumb_w, thumb_h), interpolation=cv2.INTER_NEAREST)
             thumbs_b64.append(to_b64(thumb))
-            pct = v / 255 * 100
-            captions.append(f"{pct:.1f}%")
+            captions.append(f"{v/255*100:.1f}%")
 
-        # Grid interativo com flex horizontal
-        html = f"""
-        <style>
-        .grid {{ display: flex;
-                 flex-wrap: wrap;
-                 justify-content: flex-start;
-                 gap: 10px;
-                 width: 100%;
-        }}
-        .grid img {{ flex: 0 0 auto; width: {thumb_w}px; height: {thumb_h}px; cursor: pointer; }}
-        #lightbox {{ position: fixed; display: none; top: 0; left: 0; width: 100vw; height: 100vh;
-                     background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index:999; }}
-        #lightbox img {{ max-width: 90%; max-height: 90%; }}
-        #close {{ position: absolute; top: 20px; right: 30px; color: white; font-size: 2rem; cursor: pointer; }}
-        </style>
-        <div class="grid">
-        """
+        # Flex horizontal grid with lightbox
+        html = f'''<style>
+        .grid {{ display:flex; flex-wrap:wrap; gap:10px; width:100%; }}
+        .grid img {{ flex:0 0 auto; width:{thumb_w}px; height:{thumb_h}px; cursor:pointer; }}
+        #lightbox {{ position:fixed; display:none; top:0; left:0; width:100vw; height:100vh;
+                     background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index:999; }}
+        #lightbox img {{ max-width:90%; max-height:90%; }}
+        #close {{ position:absolute; top:20px; right:30px; color:white; font-size:2rem; cursor:pointer; }}
+        </style><div class="grid">''' 
         for thumb_src, full_src, cap in zip(thumbs_b64, full_b64, captions):
             html += f'<img src="data:image/png;base64,{thumb_src}" data-full="data:image/png;base64,{full_src}" alt="{cap}" />'
-        html += """
-        </div>
+        html += '''</div>
         <div id="lightbox" onclick="if(event.target.id=='lightbox')this.style.display='none';">
             <span id="close" onclick="document.getElementById('lightbox').style.display='none'">&times;</span>
             <img src="" alt="">
         </div>
         <script>
-        document.querySelectorAll('.grid img').forEach(img => {
-            img.onclick = () => {
+        document.querySelectorAll('.grid img').forEach(img => {{
+            img.onclick = () => {{
                 let lb = document.getElementById('lightbox');
                 lb.querySelector('img').src = img.dataset.full;
                 lb.style.display = 'flex';
-            }
-        });
-        </script>
-        """
+            }}
+        }});
+        </script>'''
         components.html(html, height=display_h + thumb_h*2 + 100, scrolling=True)
 
-        # Botões de download
+        # Download buttons
         _, buf_poster = cv2.imencode('.png', poster)
         st.download_button('Download da referência', buf_poster.tobytes(),
                            file_name=f'posterizada_{uploaded_file.name}.png', mime='image/png')
-
-        # ZIP com camadas e referência
         zip_buf = io.BytesIO()
         with zipfile.ZipFile(zip_buf, 'w') as zf:
             zf.writestr(f'posterizada_{uploaded_file.name}.png', buf_poster.tobytes())
             for i, cap in enumerate(captions):
                 thumb_data = base64.b64decode(full_b64[i])
-                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.',',')}.png', thumb_data)
+                zf.writestr(f'{uploaded_file.name}_tom_{cap.replace('.','\,')}.png', thumb_data)
         st.download_button('Download das camadas e referência (.ZIP)', zip_buf.getvalue(),
                            file_name=f'conjunto_{uploaded_file.name}.zip', mime='application/zip')
